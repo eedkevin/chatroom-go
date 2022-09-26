@@ -1,0 +1,120 @@
+package room
+
+import (
+	"fmt"
+	"net/http"
+	"chatroom-demo/internal/app/application/service"
+	"chatroom-demo/internal/app/domain"
+
+	"github.com/gin-gonic/gin"
+)
+
+type Controller struct {
+	chatroomService  service.IChatRoom
+	websocketService service.ISocket
+}
+
+func NewController(chatroom service.IChatRoom, websocket service.ISocket) *Controller {
+	return &Controller{chatroomService: chatroom, websocketService: websocket}
+}
+
+func (ctrl Controller) Create(c *gin.Context) {
+	rawBody, err := c.GetRawData()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": "error",
+			"msg":    "Invalid request",
+		})
+		return
+	}
+
+	fmt.Println(string(rawBody))
+
+	args := &CreateRoomArgs{}
+	args.LoadFromJSON(rawBody)
+	room, err := ctrl.chatroomService.Create(args.Name, domain.ROOM_TYPE_PUBLIC)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error",
+			"msg":    "Internal system error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "ok",
+		"data":   room,
+	})
+}
+
+func (ctrl Controller) List(c *gin.Context) {
+	rooms, err := ctrl.chatroomService.List()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error",
+			"msg":    "Internal system error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "ok",
+		"data":   rooms,
+	})
+}
+
+func (ctrl Controller) Get(c *gin.Context) {
+	id := c.Param("id")
+	room, err := ctrl.chatroomService.Get(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error",
+			"msg":    "Internal system error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "ok",
+		"data":   room,
+	})
+}
+
+func (ctrl Controller) Destroy(c *gin.Context) {
+	id := c.Param("id")
+	err := ctrl.chatroomService.Destroy(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error",
+			"msg":    "Internal system error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "ok",
+	})
+}
+
+func (ctrl Controller) Publish(c *gin.Context) {
+	roomID := c.Param("id")
+	rawBody, err := c.GetRawData()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": "error",
+			"msg":    "Invalid request",
+		})
+		return
+	}
+
+	args := &PublishMessageArgs{}
+	args.LoadFromJSON(rawBody)
+
+	err = ctrl.websocketService.HandleMessage(roomID, args.From, args.Content)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error",
+			"msg":    "Internal system error",
+		})
+	}
+}
