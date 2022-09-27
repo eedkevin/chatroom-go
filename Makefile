@@ -13,3 +13,7 @@ run:
 .PHONY: watch
 watch:
 	air -c .air.toml
+
+.PHONY: compose-up
+compose-up:
+	docker compose up --build
