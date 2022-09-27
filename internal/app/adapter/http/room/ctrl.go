@@ -1,10 +1,11 @@
 package room
 
 import (
+	"chatroom-demo/internal/app/application/service"
+	"chatroom-demo/internal/app/application/usecase"
+	"chatroom-demo/internal/app/domain"
 	"fmt"
 	"net/http"
-	"chatroom-demo/internal/app/application/service"
-	"chatroom-demo/internal/app/domain"
 
 	"github.com/gin-gonic/gin"
 )
@@ -110,11 +111,28 @@ func (ctrl Controller) Publish(c *gin.Context) {
 	args := &PublishMessageArgs{}
 	args.LoadFromJSON(rawBody)
 
-	err = ctrl.websocketService.HandleMessage(roomID, args.From, args.Content)
+	err = usecase.HandleMessage(ctrl.websocketService, ctrl.chatroomService, roomID, args.From, args.Content)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": "error",
 			"msg":    "Internal system error",
 		})
 	}
+}
+
+func (ctrl Controller) Thumbnail(c *gin.Context) {
+	roomID := c.Param("id")
+	thumbnail, err := ctrl.chatroomService.Thumbnail(roomID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error",
+			"msg":    "Internal system error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "ok",
+		"data":   thumbnail,
+	})
 }

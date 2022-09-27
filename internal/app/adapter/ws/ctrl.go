@@ -1,8 +1,8 @@
 package ws
 
 import (
-	"net/http"
 	"chatroom-demo/internal/app/application/service"
+	"chatroom-demo/internal/app/application/usecase"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -15,24 +15,13 @@ var upgrader = websocket.Upgrader{
 
 type Controller struct {
 	websocketService service.ISocket
+	chatroomService  service.IChatRoom
 }
 
-func NewController(service service.ISocket) *Controller {
-	return &Controller{websocketService: service}
+func NewController(service service.ISocket, chatroom service.IChatRoom) *Controller {
+	return &Controller{websocketService: service, chatroomService: chatroom}
 }
 
 func (ctrl Controller) Connect(c *gin.Context) {
-	ctrl.websocketService.HandleConnection(c.Writer, c.Request, c.Param("roomID"), c.Param("userID"))
-}
-
-func (ctrl Controller) Broadcast(c *gin.Context) {
-	_, err := c.GetRawData()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status": "error",
-			"error":  "Invalid request",
-		})
-		return
-	}
-	// ctrl.websocketService.HandleMessage(c.Writer, c.Request, c.Param("roomID"), c.Param("userID"))
+	usecase.HandleConnection(ctrl.websocketService, ctrl.chatroomService, c.Writer, c.Request, c.Param("roomID"), c.Param("userID"))
 }

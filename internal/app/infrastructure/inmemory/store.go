@@ -1,6 +1,7 @@
 package inmemory
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -42,5 +43,16 @@ func (s *InmemoryStorage) Delete(id string) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	delete(s.data, id)
+	return nil
+}
+
+func (s *InmemoryStorage) Update(id string, obj interface{}) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	_, ok := s.data[id]
+	if !ok { // not exists
+		return fmt.Errorf("item[%s] not exists in storage", id)
+	}
+	s.data[id] = obj
 	return nil
 }

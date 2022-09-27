@@ -1,8 +1,7 @@
 package service
 
 import (
-	"fmt"
-	"log"
+	"chatroom-demo/internal/app/domain/vo"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -72,42 +71,29 @@ func (m MultiRoomConns) GetUserConnsInRoom(roomID string) map[string]*websocket.
 	}
 }
 
-func (s *Websocket) HandleConnection(w http.ResponseWriter, r *http.Request, roomID string, userID string) {
-	conn, err := s.Upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Printf("error on upgrading http to ws, room[%s] user[%s], err: %v", roomID, userID, err)
+func (s *Websocket) Broadcast(message vo.Message) {
+	msg := Message{
+		From:    message.From,
+		To:      message.To,
+		Content: message.Content,
 	}
-	defer conn.Close()
-
-	s.Clients.Register(roomID, userID, conn)
-	log.Printf("client[%s] connected to room[%s]", userID, roomID)
-	for {
-		var msg Message
-		err := conn.ReadJSON(&msg)
-		if err != nil {
-			delete(s.Clients[roomID], userID)
-			log.Printf("error on reading message from client, %v", err)
-			log.Printf("client[%s] disconnected from room[%s]", userID, roomID)
-			break
-		}
-		log.Printf("received message from client[%s]: %s", msg.From, msg.Content)
-		s.BroadcastChannel <- msg
-	}
+	s.BroadcastChannel <- msg
 }
 
-func (s *Websocket) HandleMessage(roomID string, userID string, msg string) error {
-	ok := s.Clients.UserExists(roomID, userID)
-	if !ok {
-		return fmt.Errorf("user[%s] has not been found in room[%s]", userID, roomID)
-	}
-	message := Message{
-		From:    userID,
-		To:      roomID,
-		Content: msg,
-	}
+func (s *Websocket) Upgrade(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
+	return s.Upgrader.Upgrade(w, r, nil)
+}
 
-	s.BroadcastChannel <- message
-	return nil
+func (s *Websocket) Register(roomID, userID string, conn *websocket.Conn) {
+	s.Clients.Register(roomID, userID, conn)
+}
+
+func (s *Websocket) Deregister(roomID, userID string) {
+	s.Clients.Deregister(roomID, userID)
+}
+
+func (s *Websocket) UserExists(roomID string, userID string) bool {
+	return s.Clients.UserExists(roomID, userID)
 }
 
 func (s *Websocket) Loop() {

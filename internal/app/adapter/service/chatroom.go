@@ -46,14 +46,24 @@ func (s ChatRoomService) Destroy(roomID string) error {
 	return s.roomRepo.Delete(roomID)
 }
 
-func (s ChatRoomService) Join() error {
+func (s ChatRoomService) SaveMessage(roomID string, message vo.Message) error {
+	return s.roomRepo.SaveMessage(roomID, message)
+}
+
+func (s ChatRoomService) Join(roomID string) error {
+	// TODO
 	return nil
 }
 
-func (s ChatRoomService) Thumbnail() (vo.RoomThumbnail, error) {
-	return vo.RoomThumbnail{}, nil
+func (s ChatRoomService) Thumbnail(roomID string) (vo.RoomThumbnail, error) {
+	room, err := s.roomRepo.Get(roomID)
+	if err != nil {
+		return vo.RoomThumbnail{}, errors.Wrap(err, "error on getting room from storage")
+	}
+	return *room.Thumbnail(), nil
 }
 
-func (s ChatRoomService) Participants() ([]domain.User, error) {
+func (s ChatRoomService) Participants(roomID string) ([]domain.User, error) {
+	// TODO
 	return make([]domain.User, 0), nil
 }

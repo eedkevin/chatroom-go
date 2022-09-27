@@ -32,6 +32,7 @@ func setupRoute(server *Server) {
 			roomGroup.POST("/", roomCtrl.Create)
 			roomGroup.GET("/", roomCtrl.List)
 			roomGroup.GET("/:id", roomCtrl.Get)
+			roomGroup.GET("/:id/thumbnail", roomCtrl.Thumbnail)
 			roomGroup.DELETE("/:id", roomCtrl.Destroy)
 			roomGroup.POST("/:id/publish", roomCtrl.Publish)
 		}
@@ -46,7 +47,7 @@ func setupRoute(server *Server) {
 
 		wsGroup := apiGroup.Group("/ws")
 		{
-			wsCtrl := ws.NewController(wsService)
+			wsCtrl := ws.NewController(wsService, chatService)
 			wsGroup.GET("/:roomID/:userID", wsCtrl.Connect)
 		}
 

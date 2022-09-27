@@ -1,9 +1,10 @@
 package repository
 
 import (
-	"fmt"
 	"chatroom-demo/internal/app/domain"
+	"chatroom-demo/internal/app/domain/vo"
 	"chatroom-demo/internal/app/infrastructure"
+	"fmt"
 
 	"github.com/pkg/errors"
 )
@@ -59,6 +60,31 @@ func (r RoomRepo) Delete(roomID string) error {
 	err := r.storage.Delete(roomID)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("error on RoomRepo.Delete, %v", roomID))
+	}
+	return nil
+}
+
+func (r RoomRepo) Update(room domain.Room) error {
+	err := r.storage.Update(room.ID, room)
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("error on RoomRepo.Update, %v", room))
+	}
+	return nil
+}
+
+func (r RoomRepo) SaveMessage(roomID string, message vo.Message) error {
+	data, err := r.storage.Get(roomID)
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("error on RoomRepo.SaveMessage, %v, %v", roomID, message))
+	}
+	room, ok := data.(domain.Room)
+	if !ok {
+		return fmt.Errorf("error on RoomRepo.SaveMessage, %v", data)
+	}
+	room.Messages = append(room.Messages, message)
+	err = r.storage.Update(room.ID, room)
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("error on RoomRepo.SaveMessage, %v, %v", roomID, message))
 	}
 	return nil
 }
