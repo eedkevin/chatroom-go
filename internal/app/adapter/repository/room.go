@@ -88,3 +88,15 @@ func (r RoomRepo) SaveMessage(roomID string, message vo.Message) error {
 	}
 	return nil
 }
+
+func (r RoomRepo) ListMessages(roomID string) ([]vo.Message, error) {
+	data, err := r.storage.Get(roomID)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("error on RoomRepo.ListMessages, %v, %v", roomID, data))
+	}
+	room, ok := data.(domain.Room)
+	if !ok {
+		return nil, fmt.Errorf("error on RoomRepo.ListMessages, %v", data)
+	}
+	return room.Messages, nil
+}

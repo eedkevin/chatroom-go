@@ -67,3 +67,7 @@ func (s ChatRoomService) Participants(roomID string) ([]domain.User, error) {
 	// TODO
 	return make([]domain.User, 0), nil
 }
+
+func (s ChatRoomService) ListMessages(roomID string) ([]vo.Message, error) {
+	return s.roomRepo.ListMessages(roomID)
+}

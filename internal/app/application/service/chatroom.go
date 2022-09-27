@@ -11,6 +11,7 @@ type IChatRoom interface {
 	List() ([]domain.Room, error)
 	Destroy(roomID string) error
 	SaveMessage(roomID string, message vo.Message) error
+	ListMessages(roomID string) ([]vo.Message, error)
 	Join(roomID string) error
 	Thumbnail(roomID string) (vo.RoomThumbnail, error)
 	Participants(roomID string) ([]domain.User, error)

@@ -9,7 +9,8 @@ import (
 
 type ISocket interface {
 	Upgrade(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error)
-	Broadcast(message vo.Message)
+	Broadcast(roomID string, message vo.Message)
+	Publish(roomID string, userID string, message vo.Message)
 	Register(roomID, userID string, conn *websocket.Conn)
 	Deregister(roomID, userID string)
 	UserExists(roomID string, userID string) bool

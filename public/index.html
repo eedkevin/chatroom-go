@@ -40,7 +40,7 @@ window.onload = function () {
             return false;
         }
 
-        conn.send(JSON.stringify({from: user.value, to: room.value, content: msg.value}));
+        conn.send(JSON.stringify({room_id: room.value, from: user.value, to: '*', content: msg.value}));
         msg.value = "";
         return false;
     };

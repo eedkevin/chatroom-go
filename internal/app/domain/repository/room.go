@@ -12,4 +12,5 @@ type IRoomRepo interface {
 	Delete(roomID string) error
 	Update(room domain.Room) error
 	SaveMessage(roomID string, message vo.Message) error
+	ListMessages(roomID string) ([]vo.Message, error)
 }

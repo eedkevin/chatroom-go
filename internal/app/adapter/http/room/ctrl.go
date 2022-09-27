@@ -92,12 +92,14 @@ func (ctrl Controller) Destroy(c *gin.Context) {
 		return
 	}
 
+	// TODO
+
 	c.JSON(http.StatusOK, gin.H{
 		"status": "ok",
 	})
 }
 
-func (ctrl Controller) Publish(c *gin.Context) {
+func (ctrl Controller) Broadcast(c *gin.Context) {
 	roomID := c.Param("id")
 	rawBody, err := c.GetRawData()
 	if err != nil {
@@ -110,7 +112,6 @@ func (ctrl Controller) Publish(c *gin.Context) {
 
 	args := &PublishMessageArgs{}
 	args.LoadFromJSON(rawBody)
-
 	err = usecase.HandleMessage(ctrl.websocketService, ctrl.chatroomService, roomID, args.From, args.Content)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

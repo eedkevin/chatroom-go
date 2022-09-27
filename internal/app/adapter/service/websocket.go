@@ -10,6 +10,7 @@ import (
 type MultiRoomConns map[string]map[string]*websocket.Conn // roomID -> userID -> *websocket.Conn
 
 type Message struct {
+	RoomID  string `json:"room_id"`
 	From    string `json:"from"`
 	To      string `json:"to"`
 	Content string `json:"content"`
@@ -18,6 +19,7 @@ type Message struct {
 type Websocket struct {
 	Upgrader         websocket.Upgrader
 	BroadcastChannel chan Message
+	PublishChannel   chan Message
 	Clients          MultiRoomConns
 }
 
@@ -32,6 +34,7 @@ func NewWebsocket() *Websocket {
 		},
 		Clients:          make(MultiRoomConns),
 		BroadcastChannel: make(chan Message),
+		PublishChannel:   make(chan Message),
 	}
 }
 
@@ -55,29 +58,44 @@ func (m MultiRoomConns) UserExists(roomID, userID string) (ok bool) {
 	return
 }
 
-func (m MultiRoomConns) GetUserConn(roomID, userID string) *websocket.Conn {
+func (m MultiRoomConns) GetUserConn(roomID, userID string) (*websocket.Conn, bool) {
 	if _, ok := m[roomID]; ok {
-		return m[roomID][userID]
+		if _, ok := m[roomID][userID]; ok {
+			return m[roomID][userID], true
+		} else {
+			return nil, false
+		}
 	} else {
-		return nil
+		return nil, false
 	}
 }
 
-func (m MultiRoomConns) GetUserConnsInRoom(roomID string) map[string]*websocket.Conn {
+func (m MultiRoomConns) GetUserConnsInRoom(roomID string) (map[string]*websocket.Conn, bool) {
 	if _, ok := m[roomID]; ok {
-		return m[roomID]
+		return m[roomID], true
 	} else {
-		return nil
+		return nil, false
 	}
 }
 
-func (s *Websocket) Broadcast(message vo.Message) {
+func (s *Websocket) Broadcast(roomID string, message vo.Message) {
 	msg := Message{
+		RoomID:  roomID,
 		From:    message.From,
 		To:      message.To,
 		Content: message.Content,
 	}
 	s.BroadcastChannel <- msg
+}
+
+func (s *Websocket) Publish(roomID string, userID string, message vo.Message) {
+	msg := Message{
+		RoomID:  roomID,
+		From:    message.From,
+		To:      userID,
+		Content: message.Content,
+	}
+	s.PublishChannel <- msg
 }
 
 func (s *Websocket) Upgrade(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
@@ -98,14 +116,29 @@ func (s *Websocket) UserExists(roomID string, userID string) bool {
 
 func (s *Websocket) Loop() {
 	for {
-		msg := <-s.BroadcastChannel
-		roomID := msg.To
-		userConns := s.Clients.GetUserConnsInRoom(roomID)
-		for userID, conn := range userConns {
-			err := conn.WriteJSON(msg)
-			if err != nil {
-				conn.Close()
-				s.Clients.Deregister(roomID, userID)
+		select {
+		case msg := <-s.BroadcastChannel:
+			roomID := msg.RoomID
+			userConns, ok := s.Clients.GetUserConnsInRoom(roomID)
+			if ok {
+				for userID, conn := range userConns {
+					err := conn.WriteJSON(msg)
+					if err != nil {
+						conn.Close()
+						s.Clients.Deregister(roomID, userID)
+					}
+				}
+			}
+		case msg := <-s.PublishChannel:
+			roomID := msg.RoomID
+			userID := msg.To
+			conn, ok := s.Clients.GetUserConn(roomID, userID)
+			if ok {
+				err := conn.WriteJSON(msg)
+				if err != nil {
+					conn.Close()
+					s.Clients.Deregister(roomID, userID)
+				}
 			}
 		}
 	}

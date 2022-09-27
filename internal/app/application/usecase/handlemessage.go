@@ -13,10 +13,10 @@ func HandleMessage(socket service.ISocket, chatroom service.IChatRoom, roomID st
 	}
 	message := vo.Message{
 		From:    userID,
-		To:      roomID,
+		To:      vo.MESSAGE_TO_ALL,
 		Content: msg,
 	}
 	chatroom.SaveMessage(roomID, message)
-	socket.Broadcast(message)
+	socket.Broadcast(roomID, message)
 	return nil
 }
