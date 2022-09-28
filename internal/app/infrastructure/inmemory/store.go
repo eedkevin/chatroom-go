@@ -46,13 +46,13 @@ func (s *InmemoryStorage) Delete(id string) error {
 	return nil
 }
 
-func (s *InmemoryStorage) Update(id string, obj interface{}) error {
+func (s *InmemoryStorage) Update(id string, obj interface{}) (interface{}, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	_, ok := s.data[id]
 	if !ok { // not exists
-		return fmt.Errorf("item[%s] not exists in storage", id)
+		return nil, fmt.Errorf("item[%s] not exists in storage", id)
 	}
 	s.data[id] = obj
-	return nil
+	return obj, nil
 }

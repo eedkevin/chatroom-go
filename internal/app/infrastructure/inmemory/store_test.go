@@ -120,15 +120,16 @@ func TestInmemoryStoreBasic(t *testing.T) {
 		for _, tc := range testcases {
 			if !tc.Expect.Error {
 				Convey(fmt.Sprintf("given a valid input: %v", tc.Input), func() {
-					err := store.Update(tc.Input.Data.ID, tc.Input.Data.Object)
+					obj, err := store.Update(tc.Input.Data.ID, tc.Input.Data.Object)
 
-					Convey("should return no error on store.Update", func() {
+					Convey("should return the expected value with no error on store.Update", func() {
 						So(err, ShouldBeNil)
+						So(obj, ShouldEqual, tc.Expect.Data.Object)
 					})
 				})
 			} else {
 				Convey(fmt.Sprintf("given an invalid input: %v", tc.Input), func() {
-					err := store.Update(tc.Input.Data.ID, tc.Input.Data.Object)
+					_, err := store.Update(tc.Input.Data.ID, tc.Input.Data.Object)
 
 					Convey("should return error on store.Update", func() {
 						So(err, ShouldNotBeNil)
@@ -152,6 +153,67 @@ func TestInmemoryStoreBasic(t *testing.T) {
 				Convey(fmt.Sprintf("given an invalid input: %v", tc.Input), func() {
 					_, err := store.Get(tc.Input.Data.ID)
 					Convey("should return error on store.Delete", func() {
+						So(err, ShouldNotBeNil)
+					})
+				})
+			}
+		}
+	})
+}
+
+func TestInmemoryStoreConcurrentUpdate(t *testing.T) {
+	setup(t)
+
+	Convey("Save", t, func() {
+		for _, tc := range testcases {
+			if !tc.Expect.Error {
+				Convey(fmt.Sprintf("given a valid input: %v", tc.Input), func() {
+					err := store.Save(tc.Input.Data.ID, tc.Input.Data.Object)
+
+					Convey("should return no error on store.Save", func() {
+						So(err, ShouldBeNil)
+					})
+				})
+			} else {
+				Convey(fmt.Sprintf("given an invalid input: %v", tc.Input), func() {
+					_, err := store.Get(tc.Input.Data.ID)
+					Convey("should return error on store.Save", func() {
+						So(err, ShouldNotBeNil)
+					})
+				})
+			}
+		}
+	})
+
+	Convey("Concurrent Update", t, func() {
+		tcChan := make(chan interface{})
+		spanChan := make(chan interface{})
+
+		for _, tc := range testcases {
+			if !tc.Expect.Error {
+				Convey(fmt.Sprintf("given a valid input: %v", tc.Input), func() {
+					go func() {
+						obj, _ := store.Update(tc.Input.Data.ID, tc.Input.Data.Object)
+						tcChan <- obj
+					}()
+					Convey("should always return the expected value with no error on store.Update", func() {
+						So(<-tcChan, ShouldEqual, tc.Expect.Data.Object)
+					})
+
+					spanVal := "span on concurrent update"
+					go func() {
+						obj, _ := store.Update(tc.Input.Data.ID, spanVal)
+						spanChan <- obj
+					}()
+					Convey("should always return the span value with no error on store.Update", func() {
+						So(<-spanChan, ShouldEqual, spanVal)
+					})
+				})
+			} else {
+				Convey(fmt.Sprintf("given an invalid input: %v", tc.Input), func() {
+					_, err := store.Update(tc.Input.Data.ID, tc.Input.Data.Object)
+
+					Convey("should return error on store.Update", func() {
 						So(err, ShouldNotBeNil)
 					})
 				})

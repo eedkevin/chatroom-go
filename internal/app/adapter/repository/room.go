@@ -65,7 +65,7 @@ func (r RoomRepo) Delete(roomID string) error {
 }
 
 func (r RoomRepo) Update(room domain.Room) error {
-	err := r.storage.Update(room.ID, room)
+	_, err := r.storage.Update(room.ID, room)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("error on RoomRepo.Update, %v", room))
 	}
@@ -82,7 +82,7 @@ func (r RoomRepo) SaveMessage(roomID string, message vo.Message) error {
 		return fmt.Errorf("error on RoomRepo.SaveMessage, %v", data)
 	}
 	room.Messages = append(room.Messages, message)
-	err = r.storage.Update(room.ID, room)
+	_, err = r.storage.Update(room.ID, room)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("error on RoomRepo.SaveMessage, %v, %v", roomID, message))
 	}
