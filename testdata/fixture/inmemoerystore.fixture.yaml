@@ -1,0 +1,27 @@
+- input: 
+    data:
+      id: 1
+      object: random string
+  expect:
+    error: false
+    data:
+      id: 1
+      object: random string
+- input: 
+    data:
+      id: 98fdasfeqw-reqwfcds0afeqwfeqw-feqwfeqw
+      object: true
+  expect:
+    error: false
+    data:
+      id: false
+      object: true
+- input: 
+    data:
+      id: false
+      object: true
+  expect:
+    error: false
+    data:
+      id: false
+      object: true

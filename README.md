@@ -23,7 +23,7 @@ or `docker compose`
 $ docker compose up --build
 ```
 
-2. trial from web browser
+2. Trial from web browser
 ```
 $ open http://localhost:8080
 ```

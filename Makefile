@@ -17,3 +17,7 @@ watch:
 .PHONY: compose-up
 compose-up:
 	docker compose up --build
+
+.PHONY: test
+test:
+	go test -v ./...
