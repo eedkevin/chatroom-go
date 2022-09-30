@@ -118,7 +118,7 @@ func (conn *WebSocketClient) listen() {
 			conn.closeWs()
 			break
 		}
-		log.Printf("message from server: %v", msg)
+		log.Printf("message from server: %s: %s", msg.From, msg.Content)
 	}
 }
 
