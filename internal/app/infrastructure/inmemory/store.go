@@ -1,7 +1,6 @@
 package inmemory
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -51,7 +50,7 @@ func (s *InmemoryStorage) Update(id string, obj interface{}) (interface{}, error
 	defer s.mutex.Unlock()
 	_, ok := s.data[id]
 	if !ok { // not exists
-		return nil, fmt.Errorf("item[%s] not exists in storage", id)
+		return nil, nil
 	}
 	s.data[id] = obj
 	return obj, nil

@@ -1,9 +1,9 @@
 package repository
 
 import (
-	"fmt"
 	"chatroom-demo/internal/app/domain"
 	"chatroom-demo/internal/app/infrastructure"
+	"fmt"
 
 	"github.com/pkg/errors"
 )
@@ -33,21 +33,21 @@ func (r UserRepo) List() ([]domain.User, error) {
 	return users, nil
 }
 
-func (r UserRepo) Get(userID string) (domain.User, error) {
+func (r UserRepo) Get(userID string) (*domain.User, error) {
 	data, err := r.storage.Get(userID)
-	if err != nil {
-		return domain.User{}, errors.Wrap(err, "error on UserRepo.Get")
+	if data == nil && err == nil { // not found
+		return nil, fmt.Errorf("NOT_FOUND")
 	}
 
-	if data == nil {
-		return domain.User{}, nil
+	if err != nil {
+		return nil, errors.Wrap(err, "error on UserRepo.Get")
 	}
 
 	user, ok := data.(domain.User)
 	if !ok {
-		return domain.User{}, fmt.Errorf("error on UserRepo.Get converting to user, %v", data)
+		return nil, fmt.Errorf("error on UserRepo.Get converting to user, %v", data)
 	}
-	return user, nil
+	return &user, nil
 }
 
 func (r UserRepo) Save(user domain.User) error {

@@ -34,21 +34,21 @@ func (r RoomRepo) List() ([]domain.Room, error) {
 	return rooms, nil
 }
 
-func (r RoomRepo) Get(roomID string) (domain.Room, error) {
+func (r RoomRepo) Get(roomID string) (*domain.Room, error) {
 	data, err := r.storage.Get(roomID)
-	if err != nil {
-		return domain.Room{}, errors.Wrap(err, "error on RoomRepo.Get")
+	if data == nil && err == nil { // not found
+		return nil, fmt.Errorf("NOT_FOUND")
 	}
 
-	if data == nil {
-		return domain.Room{}, nil
+	if err != nil {
+		return nil, errors.Wrap(err, "error on RoomRepo.Get")
 	}
 
 	room, ok := data.(domain.Room)
 	if !ok {
-		return domain.Room{}, fmt.Errorf("error on RoomRepo.Get converting to room, %v", data)
+		return nil, fmt.Errorf("error on RoomRepo.Get converting to room, %v", data)
 	}
-	return room, nil
+	return &room, nil
 }
 
 func (r RoomRepo) Save(room domain.Room) error {
@@ -65,7 +65,11 @@ func (r RoomRepo) Delete(roomID string) error {
 }
 
 func (r RoomRepo) Update(room domain.Room) error {
-	_, err := r.storage.Update(room.ID, room)
+	data, err := r.storage.Update(room.ID, room)
+	if data == nil && err == nil { // not found
+		return fmt.Errorf("NOT_FOUND")
+	}
+
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("error on RoomRepo.Update, %v", room))
 	}
