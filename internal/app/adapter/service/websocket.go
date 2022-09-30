@@ -53,9 +53,24 @@ func (m MultiRoomConns) Deregister(roomID, userID string) {
 	}
 }
 
+func (m MultiRoomConns) RoomExists(roomID string) (ok bool) {
+	if _, ok = m[roomID]; ok {
+		return true
+	} else {
+		return false
+	}
+}
+
 func (m MultiRoomConns) UserExists(roomID, userID string) (ok bool) {
-	_, ok = m[roomID]
-	return
+	if _, ok = m[roomID]; ok {
+		if _, ok = m[roomID][userID]; ok {
+			return true
+		} else {
+			return false
+		}
+	} else {
+		return false
+	}
 }
 
 func (m MultiRoomConns) GetUserConn(roomID, userID string) (*websocket.Conn, bool) {
@@ -108,6 +123,10 @@ func (s *Websocket) Register(roomID, userID string, conn *websocket.Conn) {
 
 func (s *Websocket) Deregister(roomID, userID string) {
 	s.Clients.Deregister(roomID, userID)
+}
+
+func (s *Websocket) RoomExists(roomID string) bool {
+	return s.Clients.RoomExists(roomID)
 }
 
 func (s *Websocket) UserExists(roomID string, userID string) bool {

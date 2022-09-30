@@ -5,6 +5,7 @@ import (
 	"chatroom-demo/internal/app/application/usecase"
 	"chatroom-demo/internal/app/domain"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -92,8 +93,6 @@ func (ctrl Controller) Destroy(c *gin.Context) {
 		return
 	}
 
-	// TODO
-
 	c.JSON(http.StatusOK, gin.H{
 		"status": "ok",
 	})
@@ -110,10 +109,11 @@ func (ctrl Controller) Broadcast(c *gin.Context) {
 		return
 	}
 
-	args := &PublishMessageArgs{}
+	args := &BroadcastMessageArgs{}
 	args.LoadFromJSON(rawBody)
-	err = usecase.HandleMessage(ctrl.websocketService, ctrl.chatroomService, roomID, args.From, args.Content)
+	err = usecase.HandleHTTPMessage(ctrl.websocketService, ctrl.chatroomService, roomID, args.From, args.Content)
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": "error",
 			"msg":    "Internal system error",
