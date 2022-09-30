@@ -44,7 +44,9 @@ func (r Room) Thumbnail() *vo.RoomThumbnail {
 	if len(r.Messages) < 10 {
 		recentMsg = r.Messages
 	} else {
-		recentMsg = r.Messages[(len(r.Messages) - 10):] // recent 10 messages
+		msg := make([]vo.Message, 10)
+		copy(msg, r.Messages[(len(r.Messages)-10):]) // recent 10 messages
+		recentMsg = msg
 	}
 
 	return &vo.RoomThumbnail{
