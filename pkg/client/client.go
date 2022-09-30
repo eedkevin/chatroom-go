@@ -98,6 +98,7 @@ func (conn *WebSocketClient) Connect() *websocket.Conn {
 	ws, _, err := websocket.DefaultDialer.Dial(conn.configStr, nil)
 	if err != nil {
 		log.Printf("Cannot connect to websocket: %s", conn.configStr)
+		return nil
 	}
 	log.Printf("connected to websocket to %s", conn.configStr)
 	conn.wsconn = ws

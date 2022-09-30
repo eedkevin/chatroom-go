@@ -21,3 +21,7 @@ compose-up:
 .PHONY: test
 test:
 	go test -v ./...
+
+.PHONY: client
+client:
+	go run pkg/client/client.go -user userCLI -room ${room}
