@@ -47,7 +47,6 @@
 - Docker Compose v2.0.0-rc.1 or above
 
 ## Quick Start
-1. Lift up the application using `make`
 ```
 $ make compose-up
 ```
@@ -58,25 +57,26 @@ or `docker compose`
 $ docker compose up --build
 ```
 
-2. Create a chat room
+## Main Scenarios
+1. Create a chat room
 ```
 $ curl -X POST -d '{"name": "room1"}' http://localhost:8080/api/rooms/
 ```
 
-3. Create users
+2. Create users
 ```
 $ curl -X POST -d '{"name": "Adam"}' http://localhost:8080/api/users/
 $ curl -X POST -d '{"name": "Bob"}' http://localhost:8080/api/users/
 $ curl -X POST -d '{"name": "userCLI"}' http://localhost:8080/api/users/
 ```
 
-4. Trial from web browser
+3. Trial from web browser
 ```
 $ open http://localhost:8080
 ```
-connect to the chat room using the `user ID` and `room ID` returned from step #2 and #3
+connect to the chat room using the `user ID` and `room ID` returned from step #1 and #2
 
-5. (optional) Trial via CLI client
+4. (optional) Trial via CLI client
 ```
 $ make client room=${roomID} user=${userID}
 ```
@@ -84,7 +84,7 @@ or `go run`
 ```
 $ go run pkg/client/client.go -user=${userID} -room=${roomID}
 ```
-where `${userId}` and `${roomID}` are the `user ID` and `room ID` returned from step #2 and #3
+where `${userId}` and `${roomID}` are the `user ID` and `room ID` returned from step #1 and #2
 
 ## Tips
 check `Makefile` for more shortcuts to ease local development
