@@ -119,7 +119,7 @@ func (conn *WebSocketClient) listen() {
 			conn.closeWs()
 			break
 		}
-		log.Printf("message from server: %s: %s", msg.From, msg.Content)
+		log.Printf("received message from server: %s: %s", msg.From, msg.Content)
 	}
 }
 
