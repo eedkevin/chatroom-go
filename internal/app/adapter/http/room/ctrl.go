@@ -23,6 +23,7 @@ func NewController(chatroom service.IChatRoom, websocket service.ISocket) *Contr
 func (ctrl Controller) Create(c *gin.Context) {
 	rawBody, err := c.GetRawData()
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status": "error",
 			"msg":    "Invalid request",
@@ -36,6 +37,7 @@ func (ctrl Controller) Create(c *gin.Context) {
 	args.LoadFromJSON(rawBody)
 	room, err := ctrl.chatroomService.Create(args.Name, domain.ROOM_TYPE_PUBLIC)
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": "error",
 			"msg":    "Internal system error",
@@ -52,6 +54,7 @@ func (ctrl Controller) Create(c *gin.Context) {
 func (ctrl Controller) List(c *gin.Context) {
 	rooms, err := ctrl.chatroomService.List()
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": "error",
 			"msg":    "Internal system error",
@@ -69,6 +72,7 @@ func (ctrl Controller) Get(c *gin.Context) {
 	id := c.Param("id")
 	room, err := ctrl.chatroomService.Get(id)
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": "error",
 			"msg":    "Internal system error",
@@ -86,6 +90,7 @@ func (ctrl Controller) Destroy(c *gin.Context) {
 	id := c.Param("id")
 	err := ctrl.chatroomService.Destroy(id)
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": "error",
 			"msg":    "Internal system error",
@@ -102,6 +107,7 @@ func (ctrl Controller) Broadcast(c *gin.Context) {
 	roomID := c.Param("id")
 	rawBody, err := c.GetRawData()
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status": "error",
 			"msg":    "Invalid request",
@@ -125,6 +131,7 @@ func (ctrl Controller) Thumbnail(c *gin.Context) {
 	roomID := c.Param("id")
 	thumbnail, err := ctrl.chatroomService.Thumbnail(roomID)
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": "error",
 			"msg":    "Internal system error",

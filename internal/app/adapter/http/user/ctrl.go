@@ -1,9 +1,10 @@
 package user
 
 import (
-	"fmt"
-	"net/http"
 	"chatroom-demo/internal/app/application/service"
+	"fmt"
+	"log"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,6 +20,7 @@ func NewController(service service.IUserService) *Controller {
 func (ctrl Controller) Create(c *gin.Context) {
 	rawBody, err := c.GetRawData()
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status": "error",
 			"msg":    "Invalid request",
@@ -30,6 +32,7 @@ func (ctrl Controller) Create(c *gin.Context) {
 	args.LoadFromJSON(rawBody)
 	user, err := ctrl.userService.Create(args.Name)
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status": "error",
 			"error":  "Invalid request",
@@ -47,6 +50,7 @@ func (ctrl Controller) Get(c *gin.Context) {
 	id := c.Param("id")
 	user, err := ctrl.userService.Get(id)
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": "error",
 			"msg":    "Internal system error",
@@ -64,6 +68,7 @@ func (ctrl Controller) Delete(c *gin.Context) {
 	id := c.Param("id")
 	err := ctrl.userService.Delete(id)
 	if err != nil {
+		log.Println(err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": "error",
 			"msg":    "Internal system error",
