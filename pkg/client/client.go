@@ -1,13 +1,16 @@
 package main
 
 import (
+	"bufio"
+	"chatroom-demo/pkg"
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -16,26 +19,33 @@ import (
 )
 
 var addr = flag.String("addr", "localhost:8080", "http service address")
+var room = flag.String("room", "", "room ID")
+var user = flag.String("user", "", "user ID")
 
 func main() {
 	flag.Parse()
 
-	client, err := NewWebSocketClient(*addr, "ws/room1/user2")
+	client, err := NewWebSocketClient(*addr, fmt.Sprintf("api/ws/%s/%s", *room, *user))
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println("Connecting")
 
+	reader := bufio.NewReader(os.Stdin)
 	go func() {
-		// write down data every 100 ms
-		ticker := time.NewTicker(time.Millisecond * 1500)
-		i := 0
-		for range ticker.C {
-			err := client.Write(i)
+		for {
+			line, _ := reader.ReadString('\n')
+			line = strings.Replace(line, "\n", "", -1)
+			msg := pkg.Message{
+				From:    *user,
+				To:      pkg.MESSAGE_TO_ALL,
+				Content: line,
+			}
+
+			err := client.Write(msg)
 			if err != nil {
 				fmt.Printf("error: %v, writing error\n", err)
 			}
-			i++
 		}
 	}()
 
@@ -52,13 +62,10 @@ func main() {
 	fmt.Println("Goodbye")
 }
 
-// Send pings to peer with this period
-const pingPeriod = 30 * time.Second
-
 // WebSocketClient return websocket client connection
 type WebSocketClient struct {
 	configStr string
-	sendBuf   chan []byte
+	sendBuf   chan pkg.Message
 	ctx       context.Context
 	ctxCancel context.CancelFunc
 
@@ -69,7 +76,7 @@ type WebSocketClient struct {
 // NewWebSocketClient create new websocket connection
 func NewWebSocketClient(host, channel string) (*WebSocketClient, error) {
 	conn := WebSocketClient{
-		sendBuf: make(chan []byte, 1),
+		sendBuf: make(chan pkg.Message, 1),
 	}
 	conn.ctx, conn.ctxCancel = context.WithCancel(context.Background())
 
@@ -78,7 +85,6 @@ func NewWebSocketClient(host, channel string) (*WebSocketClient, error) {
 
 	go conn.listen()
 	go conn.listenWrite()
-	go conn.ping()
 	return &conn, nil
 }
 
@@ -89,63 +95,41 @@ func (conn *WebSocketClient) Connect() *websocket.Conn {
 		return conn.wsconn
 	}
 
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-	for ; ; <-ticker.C {
-		select {
-		case <-conn.ctx.Done():
-			return nil
-		default:
-			ws, _, err := websocket.DefaultDialer.Dial(conn.configStr, nil)
-			if err != nil {
-				conn.log("connect", err, fmt.Sprintf("Cannot connect to websocket: %s", conn.configStr))
-				continue
-			}
-			conn.log("connect", nil, fmt.Sprintf("connected to websocket to %s", conn.configStr))
-			conn.wsconn = ws
-			return conn.wsconn
-		}
+	ws, _, err := websocket.DefaultDialer.Dial(conn.configStr, nil)
+	if err != nil {
+		log.Printf("Cannot connect to websocket: %s", conn.configStr)
 	}
+	log.Printf("connected to websocket to %s", conn.configStr)
+	conn.wsconn = ws
+	return conn.wsconn
 }
 
 func (conn *WebSocketClient) listen() {
-	conn.log("listen", nil, fmt.Sprintf("listen for the messages: %s", conn.configStr))
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
+	log.Printf("listen for the messages: %s", conn.configStr)
 	for {
-		select {
-		case <-conn.ctx.Done():
+		ws := conn.Connect()
+		if ws == nil {
 			return
-		case <-ticker.C:
-			for {
-				ws := conn.Connect()
-				if ws == nil {
-					return
-				}
-				_, bytMsg, err := ws.ReadMessage()
-				if err != nil {
-					conn.log("listen", err, "Cannot read websocket message")
-					conn.closeWs()
-					break
-				}
-				conn.log("listen", nil, fmt.Sprintf("websocket msg: %x\n", bytMsg))
-			}
 		}
+		var msg pkg.Message
+		err := ws.ReadJSON(&msg)
+		if err != nil {
+			log.Printf("failed reading websocket message, %v", err)
+			conn.closeWs()
+			break
+		}
+		log.Printf("message from server: %v", msg)
 	}
 }
 
 // Write data to the websocket server
-func (conn *WebSocketClient) Write(payload interface{}) error {
-	data, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
+func (conn *WebSocketClient) Write(payload pkg.Message) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 	defer cancel()
 
 	for {
 		select {
-		case conn.sendBuf <- data:
+		case conn.sendBuf <- payload:
 			return nil
 		case <-ctx.Done():
 			return fmt.Errorf("context canceled")
@@ -154,21 +138,18 @@ func (conn *WebSocketClient) Write(payload interface{}) error {
 }
 
 func (conn *WebSocketClient) listenWrite() {
-	for data := range conn.sendBuf {
+	for msg := range conn.sendBuf {
 		ws := conn.Connect()
 		if ws == nil {
 			err := fmt.Errorf("conn.ws is nil")
-			conn.log("listenWrite", err, "No websocket connection")
+			log.Printf("No websocket connection, %v", err)
 			continue
 		}
 
-		if err := ws.WriteMessage(
-			websocket.TextMessage,
-			data,
-		); err != nil {
-			conn.log("listenWrite", nil, "WebSocket Write Error")
+		if err := ws.WriteJSON(msg); err != nil {
+			log.Printf("Websocket write error, %v", err)
 		}
-		conn.log("listenWrite", nil, fmt.Sprintf("send: %s", data))
+		log.Printf("sending message to server: %v", msg)
 	}
 }
 
@@ -187,34 +168,4 @@ func (conn *WebSocketClient) closeWs() {
 		conn.wsconn = nil
 	}
 	conn.mu.Unlock()
-}
-
-func (conn *WebSocketClient) ping() {
-	conn.log("ping", nil, "ping pong started")
-	ticker := time.NewTicker(pingPeriod)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			ws := conn.Connect()
-			if ws == nil {
-				continue
-			}
-			if err := conn.wsconn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(pingPeriod/2)); err != nil {
-				conn.closeWs()
-			}
-		case <-conn.ctx.Done():
-			return
-		}
-	}
-}
-
-// Log print log statement
-// In real word I would recommend to use zerolog or any other solution
-func (conn *WebSocketClient) log(f string, err error, msg string) {
-	if err != nil {
-		fmt.Printf("Error in func: %s, err: %v, msg: %s\n", f, err, msg)
-	} else {
-		fmt.Printf("Log in func: %s, %s\n", f, msg)
-	}
 }
