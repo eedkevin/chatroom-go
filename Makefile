@@ -24,4 +24,4 @@ test:
 
 .PHONY: client
 client:
-	go run pkg/client/client.go -user userCLI -room ${room}
+	go run pkg/client/client.go -user ${user} -room ${room}
