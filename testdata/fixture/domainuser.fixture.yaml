@@ -1,0 +1,14 @@
+- input:
+    data:
+      name: random string
+  expect:
+    error: false
+    data:
+      name: random string
+- input:
+    data:
+      name: 123121
+  expect:
+    error: false
+    data:
+      name: 123121

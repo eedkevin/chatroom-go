@@ -1,0 +1,18 @@
+- input:
+    data:
+      name: random string
+      type: public
+  expect:
+    error: false
+    data:
+      name: random string
+      type: public
+- input:
+    data:
+      name: 123121
+      type: public
+  expect:
+    error: false
+    data:
+      name: 123121
+      type: public

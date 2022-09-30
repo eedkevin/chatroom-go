@@ -17,7 +17,7 @@ type Room struct {
 	Code     string
 	Name     string
 	Type     string
-	Messages []vo.Message
+	Messages []vo.Message `json:"-" yaml:"-"`
 }
 
 func NewRoom(roomName, roomType string) (*Room, error) {
