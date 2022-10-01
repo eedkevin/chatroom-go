@@ -13,6 +13,7 @@ type ISocket interface {
 	Publish(roomID string, userID string, message vo.Message)
 	Register(roomID, userID string, conn *websocket.Conn)
 	Deregister(roomID, userID string)
+	RoomExists(roomID string) bool
 	UserExists(roomID string, userID string) bool
 	Loop()
 }

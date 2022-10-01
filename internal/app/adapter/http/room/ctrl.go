@@ -1,6 +1,7 @@
 package room
 
 import (
+	"chatroom-demo/internal/app/application"
 	"chatroom-demo/internal/app/application/service"
 	"chatroom-demo/internal/app/application/usecase"
 	"chatroom-demo/internal/app/domain"
@@ -119,6 +120,14 @@ func (ctrl Controller) Broadcast(c *gin.Context) {
 	args.LoadFromJSON(rawBody)
 	err = usecase.HandleHTTPMessage(ctrl.websocketService, ctrl.chatroomService, roomID, args.From, args.Content)
 	if err != nil {
+		if err.Error() == application.NotFoundErr {
+			c.JSON(http.StatusNotFound, gin.H{
+				"status": "error",
+				"msg":    "room does not exist",
+			})
+			return
+		}
+
 		log.Println(err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": "error",
